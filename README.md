@@ -72,4 +72,3 @@ traces/             # 成功与失败示例 Trace
 - Repository Root 路径边界
 - JSONL Trace 与可诊断性
 - Model Double 与确定性测试
-

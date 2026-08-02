@@ -107,4 +107,3 @@ class AgentLoop:
             history=tuple(history),
             trace_path=self.trace.path_string,
         )
-

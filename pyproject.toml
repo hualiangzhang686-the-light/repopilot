@@ -15,4 +15,3 @@ repopilot = "repopilot.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

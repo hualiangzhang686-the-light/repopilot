@@ -6,4 +6,3 @@ dist/
 .venv/
 traces/latest.jsonl
 traces/installed-cli.jsonl
-

@@ -20,4 +20,3 @@ class RepositoryBoundary:
         if must_exist and not candidate.exists():
             raise FileNotFoundError(requested)
         return candidate
-

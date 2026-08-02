@@ -12,4 +12,3 @@ def login(username: str, password: str) -> User | None:
     if username == "demo" and password == "correct-horse":
         return User(username=username)
     return None
-

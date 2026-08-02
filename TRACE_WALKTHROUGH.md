@@ -18,4 +18,3 @@
 4. Harness 记录完整 `tool.result`，循环没有崩溃。
 
 Trace 是审计证据，不是可恢复 Session；Day 4 才引入 Session Store。
-

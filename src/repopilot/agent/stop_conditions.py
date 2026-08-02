@@ -52,4 +52,3 @@ class StopController:
         if self._calls[signature] > self.repeat_limit:
             return "repeated_tool_call"
         return None
-

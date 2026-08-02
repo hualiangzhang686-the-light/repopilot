@@ -33,4 +33,3 @@ class ToolRegistry:
             return Observation.success(result)
         except Exception as exc:
             return Observation.failure(f"{type(exc).__name__}: {exc}")
-

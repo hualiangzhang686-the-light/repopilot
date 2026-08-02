@@ -45,4 +45,3 @@ class ToolDefinition:
 class ToolExchange:
     call: "ToolCall"
     observation: Observation
-

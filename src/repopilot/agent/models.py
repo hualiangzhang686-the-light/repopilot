@@ -84,4 +84,3 @@ class ScriptedModel:
         ascii_words = [word.strip(".,?!:;()[]{}\"'") for word in lowered.split()]
         candidates = [word for word in ascii_words if len(word) >= 3 and word.isascii()]
         return max(candidates, key=len) if candidates else question.strip()
-
