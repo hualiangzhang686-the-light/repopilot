@@ -17,6 +17,7 @@ class RunResult:
     steps: int
     history: tuple[ToolExchange, ...]
     trace_path: str | None
+    metadata: dict[str, object]
 
 
 class AgentLoop:
@@ -67,6 +68,7 @@ class AgentLoop:
                     steps=steps,
                     history=tuple(history),
                     trace_path=self.trace.path_string,
+                    metadata=decision.metadata,
                 )
 
             if not isinstance(decision, ToolCall):
@@ -106,4 +108,5 @@ class AgentLoop:
             steps=steps,
             history=tuple(history),
             trace_path=self.trace.path_string,
+            metadata={},
         )

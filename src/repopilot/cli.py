@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from repopilot.agent.loop import AgentLoop
-from repopilot.agent.models import ScriptedModel
+from repopilot.agent.models import CodeResearchModel
 from repopilot.agent.stop_conditions import StopController
 from repopilot.harness.permissions import RepositoryBoundary
 from repopilot.harness.trace import TraceWriter
+from repopilot.retrieval.evidence import CitationValidator, EvidenceLedger
 from repopilot.tools.base import ToolContext
+from repopilot.tools.code import register_code_tools
 from repopilot.tools.filesystem import register_read_tools
 from repopilot.tools.registry import ToolRegistry
 
@@ -30,9 +33,10 @@ def run_research(args: argparse.Namespace) -> int:
     boundary = RepositoryBoundary(args.repo)
     registry = ToolRegistry()
     register_read_tools(registry)
+    register_code_tools(registry)
     context = ToolContext(repository_root=boundary.root, boundary=boundary)
     loop = AgentLoop(
-        model=ScriptedModel(),
+        model=CodeResearchModel(),
         registry=registry,
         context=context,
         stop_controller=StopController(
@@ -43,8 +47,17 @@ def run_research(args: argparse.Namespace) -> int:
         trace=TraceWriter(args.trace),
     )
     result = loop.run(args.question)
+    ledger_value = result.metadata.get("evidence_ledger")
+    if isinstance(ledger_value, dict):
+        ledger = EvidenceLedger.from_dict(ledger_value)
+        errors = CitationValidator(boundary).validate(ledger)
+        if errors:
+            print(json.dumps({"status": "invalid_citation", "errors": errors}, ensure_ascii=False, indent=2))
+            return 2
     if result.answer:
         print(result.answer)
+    if isinstance(ledger_value, dict):
+        print(json.dumps({"evidence_ledger": ledger_value}, ensure_ascii=False, indent=2))
     print(f"status={result.status} stop_reason={result.stop_reason} steps={result.steps}")
     print(f"trace={result.trace_path}")
     return 0 if result.status == "completed" else 2

@@ -1,74 +1,50 @@
-# RepoPilot — Day 1
+# RepoPilot — Day 1–2
 
-RepoPilot 是一个面向中小型 Python 仓库的代码研究 Agent。Day 1 版本只实现确定性、只读的最小闭环：
+RepoPilot is a small, evidence-oriented repository research agent. Day 1 provides a typed, read-only Agent Harness; Day 2 adds Python-aware retrieval and independently validated citations.
 
 ```text
-Question → ScriptedModel → Tool Call → Registry → Observation
-         ←───────────────────────────────────────────────┘
-                         ↓
-                    Final Answer
+Question → CodeResearchModel → search_code → AST chunks + keyword/TF-IDF
+                                      ↓
+                                  read_file
+                                      ↓
+                        Evidence Ledger → CitationValidator → Answer
 ```
 
-## 已实现
+## Run
 
-- `repopilot research <repo> "<question>"` CLI。
-- 可替换的 Model 接口与离线 `ScriptedModel`。
-- `list_files`、`search_text`、`read_file` 三个只读工具。
-- Tool Registry；新增工具不需要修改 Agent Loop。
-- 仓库根目录边界校验。
-- 最大工具步数、总超时、重复调用熔断。
-- 工具异常转为结构化 Observation。
-- JSONL Trace。
-- 自动化单元测试与成功/失败 Trace 示例。
-
-## 快速运行
-
-要求 Python 3.11+，无第三方运行时依赖。
-
-```powershell
-cd "D:\codex\output\repopilot"
-python -m pip install -e .
-repopilot research ./examples/demo_repo "登录逻辑在哪个文件？" --trace ./traces/success.jsonl
-python ./examples/run_failure_demo.py
-python -m unittest discover -s tests -v
-```
-
-不安装也可以运行：
+Requires Python 3.11+ and has no third-party runtime dependencies.
 
 ```powershell
 $env:PYTHONPATH="./src"
-python -m repopilot research ./examples/demo_repo "登录逻辑在哪个文件？"
+python -m repopilot research ./examples/demo_repo "Where is the login function implemented?" --trace ./traces/day2-success.jsonl
+python ./examples/run_invalid_citation_demo.py
+python -m unittest discover -s tests -v
 ```
 
-预期回答会引用 `app/auth.py` 及真实行号。默认模型是确定性的教学替身，不会调用远程 LLM。
+The research answer includes a real repository path, AST symbol, exact line range, and Evidence Ledger. The CLI validates that ledger against current repository contents before printing it.
 
-## 目录
+## Implemented Boundaries
 
-```text
-src/repopilot/
-├── agent/          # Model 接口、Agent Loop、停止条件
-├── tools/          # Tool 定义、Registry、只读文件工具
-├── harness/        # 仓库路径边界与 JSONL Trace
-└── cli.py
-tests/              # 机制级测试
-examples/demo_repo/ # 可重复的演示仓库
-traces/             # 成功与失败示例 Trace
-```
+- Read-only tools and repository-root path enforcement.
+- Maximum steps, cooperative total timeout, and repeated-call stopping.
+- Python module, class, function, and method AST chunks.
+- Deterministic keyword + TF-IDF hybrid retrieval.
+- Evidence Ledger with claim-to-evidence links.
+- Rejection of missing files, wrong symbols/lines, stale excerpts, and unknown evidence IDs.
+- JSONL success and failure traces.
 
-## 设计边界
+## Not Yet Claimed
 
-- Day 1 不接入真实 LLM、向量检索、写文件、Shell、Session、Reviewer 或 Multi-Agent。
-- 总超时是协作式边界：会在每轮模型决策和工具执行之间检查；Day 4 再为可阻塞工具加入进程级超时。
-- `ScriptedModel` 只为验证 Harness，不代表真实代码理解能力。
-- `search_text` 是确定性的文本检索；AST、混合检索与 Evidence Ledger 属于 Day 2。
+- No remote LLM or neural embedding API has been integrated or tested.
+- No non-Python parser is implemented.
+- Sparse retrieval passing five fixtures is not production retrieval-quality validation.
 
-## 相关知识点
+## Related Knowledge
 
 - Observe → Think → Act → Observe
-- Tool Schema、Handler、Registry 与 Dispatch
-- 模型提出动作，Harness 决定是否执行
-- 结构化 Observation
-- 最大步数、超时、重复调用熔断
-- Repository Root 路径边界
-- JSONL Trace 与可诊断性
-- Model Double 与确定性测试
+- Tool schema, Registry, Dispatch, and structured Observation
+- Repository boundary and least-capability design
+- AST-based structure-aware chunking
+- Sparse vector-space retrieval and hybrid ranking
+- Evidence grounding, citation validation, and fail-closed output
+- Deterministic model doubles and repeatable evaluation fixtures

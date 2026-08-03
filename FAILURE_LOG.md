@@ -1,15 +1,21 @@
 # Failure Log
 
-## Day 1
+## Day 1: Repository Escape
 
-### 仓库外路径读取
+- Scenario: `read_file` requests `../../secret.txt`.
+- Expected: the repository boundary rejects it and the Registry returns a failed Observation.
+- Reproduction: `python examples/run_failure_demo.py`.
+- Evidence: `traces/failure.jsonl`.
 
-- 场景：模型请求 `read_file` 读取 `../../secret.txt`。
-- 预期：Repository Boundary 拒绝访问，Registry 将异常转为失败 Observation，Agent Loop 保持运行并记录 Trace。
-- 验证入口：`python examples/run_failure_demo.py`。
-- Trace：`traces/failure.jsonl`。
+## Day 2: Fabricated Citation
 
-### 当前限制
+- Scenario: a claim cites `app/missing.py:1-2` and symbol `missing`.
+- Expected: citation validation fails before the answer is accepted.
+- Reproduction: `python examples/run_invalid_citation_demo.py`.
+- Evidence: `traces/day2-invalid-citation.jsonl`.
 
-- 总超时尚不能中断已经阻塞的第三方函数；当前三个内置工具均为本地只读短操作。
-- `ScriptedModel` 只覆盖确定性研究流程，不衡量真实模型推理质量。
+## Current Limits
+
+- Retrieval supports Python source only.
+- TF-IDF is deterministic sparse retrieval, not semantic neural embeddings.
+- `CodeResearchModel` is a local workflow double, not a remote LLM provider.

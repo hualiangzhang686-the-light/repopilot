@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol, TypeAlias
 from uuid import uuid4
 
@@ -21,6 +21,7 @@ class ToolCall:
 @dataclass(frozen=True)
 class FinalAnswer:
     content: str
+    metadata: dict[str, object] = field(default_factory=dict)
 
 
 ModelDecision: TypeAlias = ToolCall | FinalAnswer
@@ -84,3 +85,55 @@ class ScriptedModel:
         ascii_words = [word.strip(".,?!:;()[]{}\"'") for word in lowered.split()]
         candidates = [word for word in ascii_words if len(word) >= 3 and word.isascii()]
         return max(candidates, key=len) if candidates else question.strip()
+
+
+class CodeResearchModel:
+    """Deterministic Day 2 model that grounds one answer in retrieved code."""
+
+    def decide(self, question: str, history: list[ToolExchange]) -> ModelDecision:
+        if not history:
+            return ToolCall("search_code", {"query": question, "max_results": 5})
+
+        search = history[0]
+        matches = search.observation.data.get("matches", []) if search.observation.ok else []
+        if not isinstance(matches, list) or not matches:
+            return FinalAnswer("No grounded code evidence was found for this question.")
+
+        top = matches[0]
+        if not isinstance(top, dict):
+            return FinalAnswer("The retrieval result was malformed, so no claim was produced.")
+
+        if len(history) == 1:
+            return ToolCall(
+                "read_file",
+                {
+                    "path": str(top["path"]),
+                    "start_line": int(top["start_line"]),
+                    "end_line": int(top["end_line"]),
+                },
+            )
+
+        read = history[-1]
+        if read.call.name != "read_file" or not read.observation.ok:
+            return FinalAnswer("The selected citation could not be read, so no claim was produced.")
+
+        evidence = {
+            "id": "ev-1",
+            "path": str(top["path"]),
+            "symbol": str(top["symbol"]),
+            "kind": str(top["kind"]),
+            "start_line": int(top["start_line"]),
+            "end_line": int(top["end_line"]),
+            "reason": "Highest-scoring result from deterministic hybrid retrieval.",
+            "excerpt": str(read.observation.data.get("content", "")),
+        }
+        claim = {
+            "text": f"The most relevant implementation is {top['symbol']}.",
+            "evidence_ids": ["ev-1"],
+            "confidence": "retrieval-supported",
+        }
+        citation = f"{top['path']}:{top['start_line']}-{top['end_line']} ({top['symbol']})"
+        return FinalAnswer(
+            f"The most relevant implementation is `{top['symbol']}` at `{citation}` [ev-1].",
+            metadata={"evidence_ledger": {"question": question, "evidence": [evidence], "claims": [claim]}},
+        )

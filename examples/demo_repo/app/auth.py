@@ -8,7 +8,7 @@ class User:
 
 
 def login(username: str, password: str) -> User | None:
-    """演示登录逻辑：验证固定测试账号并返回用户。"""
+    """Validate the demo account and return the authenticated user."""
     if username == "demo" and password == "correct-horse":
         return User(username=username)
     return None
