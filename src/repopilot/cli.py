@@ -14,6 +14,7 @@ from repopilot.tools.base import ToolContext
 from repopilot.tools.code import register_code_tools
 from repopilot.tools.filesystem import register_read_tools
 from repopilot.tools.registry import ToolRegistry
+from repopilot.triage.engine import IssueTriageEngine
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,6 +27,10 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--max-steps", type=int, default=8)
     research.add_argument("--timeout", type=float, default=30.0)
     research.add_argument("--repeat-limit", type=int, default=2)
+    triage = subparsers.add_parser("triage", help="Produce a read-only, evidence-linked issue plan.")
+    triage.add_argument("repo", type=Path)
+    triage.add_argument("--issue", type=Path, required=True)
+    triage.add_argument("--trace", type=Path, default=Path("traces/triage-latest.jsonl"))
     return parser
 
 
@@ -63,11 +68,21 @@ def run_research(args: argparse.Namespace) -> int:
     return 0 if result.status == "completed" else 2
 
 
+def run_triage(args: argparse.Namespace) -> int:
+    issue_text = args.issue.read_text(encoding="utf-8")
+    result = IssueTriageEngine(args.repo).triage(issue_text, trace=TraceWriter(args.trace))
+    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+    print(f"trace={args.trace}")
+    return 0 if result.status == "ready" else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command == "research":
         return run_research(args)
+    if args.command == "triage":
+        return run_triage(args)
     parser.error(f"unsupported command: {args.command}")
     return 2
 
