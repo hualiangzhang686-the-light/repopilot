@@ -1,20 +1,29 @@
 # Trace Walkthrough
 
-`traces/success.jsonl` 展示一次完整研究循环：
+## Research
 
-1. `run.start`：记录问题和 Run ID。
-2. `model.request`：Harness 请求下一步决策。
-3. `tool.request(list_files)` / `tool.result`：观察仓库文件。
-4. `tool.request(search_text)` / `tool.result`：定位 `login` 的真实路径和行号。
-5. `tool.request(read_file)` / `tool.result`：读取命中位置附近的代码。
-6. `model.final`：根据 Observation 生成最终回答。
-7. `loop.stop(final_answer)`：记录正常停止原因。
+`traces/day2-success.jsonl` records `run.start`, model request, `search_code`, `read_file`, final answer, and `loop.stop`. Tool request and result share a `call_id`, so the selected code and final evidence can be reconstructed.
 
-`traces/failure.jsonl` 展示权限失败仍可诊断：
+## Permission failure
 
-1. 模型请求 `read_file("../../secret.txt")`。
-2. Repository Boundary 抛出 `PermissionError`。
-3. Registry 把异常转换为 `ok: false` 的 Observation。
-4. Harness 记录完整 `tool.result`，循环没有崩溃。
+`traces/day4-permission-denied.jsonl` records delete and external capabilities denied before execution. The denial is a result, not an unhandled exception.
 
-Trace 是审计证据，不是可恢复 Session；Day 4 才引入 Session Store。
+## Fix success and failure
+
+Both Day 5 traces contain:
+
+```text
+fix.start → fix.pre_test → fix.patch → fix.post_test → fix.review → fix.stop
+```
+
+The success trace ends in `verified_patch`; the failure trace records a non-zero post-test and `review_revision_limit`.
+
+## Evaluation and replay
+
+`traces/day6-eval.jsonl` records the fixed suite result and the blocked mini-swe baseline status. Run:
+
+```powershell
+repopilot replay ./traces/day6-eval.jsonl
+```
+
+Replay validates every JSONL record and rejects malformed JSON or mixed run IDs. Session recovery is separate from Trace replay: Session holds resumable control state, while Trace is the immutable execution timeline for one saved run file.

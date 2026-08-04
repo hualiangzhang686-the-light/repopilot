@@ -9,6 +9,7 @@ from repopilot.agent.models import CodeResearchModel
 from repopilot.agent.stop_conditions import StopController
 from repopilot.harness.permissions import RepositoryBoundary
 from repopilot.harness.trace import TraceWriter
+from repopilot.harness.replay import TraceReplay
 from repopilot.fix.engine import FixEngine
 from repopilot.evaluation.runner import EvalRunner
 from repopilot.retrieval.evidence import CitationValidator, EvidenceLedger
@@ -17,6 +18,7 @@ from repopilot.tools.code import register_code_tools
 from repopilot.tools.filesystem import register_read_tools
 from repopilot.tools.registry import ToolRegistry
 from repopilot.triage.engine import IssueTriageEngine
+from repopilot.providers.openai import OpenAIResponsesModel
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,6 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--max-steps", type=int, default=8)
     research.add_argument("--timeout", type=float, default=30.0)
     research.add_argument("--repeat-limit", type=int, default=2)
+    research.add_argument("--provider", choices=("local", "openai"), default="local")
+    research.add_argument("--model", default="gpt-5.6-sol")
     triage = subparsers.add_parser("triage", help="Produce a read-only, evidence-linked issue plan.")
     triage.add_argument("repo", type=Path)
     triage.add_argument("--issue", type=Path, required=True)
@@ -44,6 +48,8 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--report", type=Path, default=Path("EVAL_REPORT.md"))
     evaluate.add_argument("--baseline", type=Path, default=Path("eval/mini_swe_baseline.json"))
     evaluate.add_argument("--trace", type=Path, default=Path("traces/day6-eval.jsonl"))
+    replay = subparsers.add_parser("replay", help="Validate and print a JSONL trace timeline.")
+    replay.add_argument("trace", type=Path)
     return parser
 
 
@@ -53,8 +59,21 @@ def run_research(args: argparse.Namespace) -> int:
     register_read_tools(registry)
     register_code_tools(registry)
     context = ToolContext(repository_root=boundary.root, boundary=boundary)
+    try:
+        model = CodeResearchModel() if args.provider == "local" else OpenAIResponsesModel.from_environment(
+            registry.definitions(), model=args.model
+        )
+    except ValueError as exc:
+        print(
+            json.dumps(
+                {"status": "provider_configuration_error", "error": str(exc)},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 2
     loop = AgentLoop(
-        model=CodeResearchModel(),
+        model=model,
         registry=registry,
         context=context,
         stop_controller=StopController(
@@ -66,16 +85,17 @@ def run_research(args: argparse.Namespace) -> int:
     )
     result = loop.run(args.question)
     ledger_value = result.metadata.get("evidence_ledger")
-    if isinstance(ledger_value, dict):
-        ledger = EvidenceLedger.from_dict(ledger_value)
-        errors = CitationValidator(boundary).validate(ledger)
-        if errors:
-            print(json.dumps({"status": "invalid_citation", "errors": errors}, ensure_ascii=False, indent=2))
-            return 2
+    if not isinstance(ledger_value, dict):
+        print(json.dumps({"status": "missing_evidence_ledger"}, ensure_ascii=False, indent=2))
+        return 2
+    ledger = EvidenceLedger.from_dict(ledger_value)
+    errors = CitationValidator(boundary).validate(ledger)
+    if errors:
+        print(json.dumps({"status": "invalid_citation", "errors": errors}, ensure_ascii=False, indent=2))
+        return 2
     if result.answer:
         print(result.answer)
-    if isinstance(ledger_value, dict):
-        print(json.dumps({"evidence_ledger": ledger_value}, ensure_ascii=False, indent=2))
+    print(json.dumps({"evidence_ledger": ledger_value}, ensure_ascii=False, indent=2))
     print(f"status={result.status} stop_reason={result.stop_reason} steps={result.steps}")
     print(f"trace={result.trace_path}")
     return 0 if result.status == "completed" else 2
@@ -114,6 +134,12 @@ def run_eval(args: argparse.Namespace) -> int:
     return 0 if summary.failed == 0 else 2
 
 
+def run_replay(args: argparse.Namespace) -> int:
+    for line in TraceReplay(args.trace).timeline():
+        print(line)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -125,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_fix(args)
     if args.command == "eval":
         return run_eval(args)
+    if args.command == "replay":
+        return run_replay(args)
     parser.error(f"unsupported command: {args.command}")
     return 2
 

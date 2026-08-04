@@ -4,11 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repopilot"
-version = "0.1.0"
-description = "Evidence-oriented repository research agent built around a small, testable harness."
+version = "0.7.0"
+description = "Evidence-oriented repository research, triage, and sandboxed fix agent."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
+
+[project.urls]
+Repository = "https://github.com/hualiangzhang686-the-light/repopilot"
 
 [project.scripts]
 repopilot = "repopilot.cli:main"

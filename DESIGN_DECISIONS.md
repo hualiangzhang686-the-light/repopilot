@@ -39,3 +39,9 @@ The test command is not free-form shell: it must be `{python} -c ...` or `{pytho
 The 20-task suite is stored as data with an expected result for every task. One runner dispatches the five required categories and records actual output, pass/fail, latency, tool/process calls, citation validity, and failure layer. Token and cost remain `null` when no remote model ran; they are not reported as zero.
 
 The mini-swe-agent comparison has a pinned version, three shared tasks, repository, timeout, model-equality rule, cost limit, and test contract. Because no model credential was available and the isolated install timed out, the report marks it blocked and leaves results empty rather than fabricating a baseline.
+
+## Day 7: Provider Is an Adapter, Evidence Is Still a Harness Rule
+
+The OpenAI Responses API adapter translates RepoPilot Tool Definitions into function tools and translates response items back into `ToolCall` or `FinalAnswer`. The transport is injectable for deterministic tests. Remote answers still require a locally reconstructed Evidence Ledger and the same independent citation validation as the local model.
+
+Trace replay, Docker, CI, and delivery documents expose existing behavior rather than adding hidden autonomy. The default model follows the official 2026-08-04 resolver result (`gpt-5.6-sol`), but no live call is claimed without an API key.

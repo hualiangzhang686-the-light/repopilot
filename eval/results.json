@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-04T09:19:38.666512+00:00",
+  "generated_at": "2026-08-04T09:27:47.820034+00:00",
   "total": 20,
   "passed": 20,
   "failed": 0,
-  "duration_seconds": 0.40327,
+  "duration_seconds": 0.424966,
   "results": [
     {
       "id": "qa-01",
@@ -18,7 +18,7 @@
         "symbol": "login",
         "status": "completed"
       },
-      "duration_seconds": 0.003903,
+      "duration_seconds": 0.00399,
       "tool_calls": 2,
       "citation_valid": true,
       "tokens": null,
@@ -38,7 +38,7 @@
         "symbol": "User",
         "status": "completed"
       },
-      "duration_seconds": 0.00325,
+      "duration_seconds": 0.003273,
       "tool_calls": 2,
       "citation_valid": true,
       "tokens": null,
@@ -58,7 +58,7 @@
         "symbol": "authenticate",
         "status": "completed"
       },
-      "duration_seconds": 0.003771,
+      "duration_seconds": 0.003136,
       "tool_calls": 2,
       "citation_valid": true,
       "tokens": null,
@@ -78,7 +78,7 @@
         "symbol": "is_session_expired",
         "status": "completed"
       },
-      "duration_seconds": 0.00332,
+      "duration_seconds": 0.003889,
       "tool_calls": 2,
       "citation_valid": true,
       "tokens": null,
@@ -98,7 +98,7 @@
         "symbol": "create_session",
         "status": "completed"
       },
-      "duration_seconds": 0.003373,
+      "duration_seconds": 0.003334,
       "tool_calls": 2,
       "citation_valid": true,
       "tokens": null,
@@ -116,7 +116,7 @@
         "status": "ready",
         "hypotheses": 3
       },
-      "duration_seconds": 0.001718,
+      "duration_seconds": 0.001607,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -134,7 +134,7 @@
         "status": "ready",
         "hypotheses": 3
       },
-      "duration_seconds": 0.001783,
+      "duration_seconds": 0.001681,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -152,7 +152,7 @@
         "status": "blocked",
         "hypotheses": 0
       },
-      "duration_seconds": 0.000374,
+      "duration_seconds": 0.000349,
       "tool_calls": 0,
       "citation_valid": null,
       "tokens": null,
@@ -170,7 +170,7 @@
         "status": "ready",
         "hypotheses": 3
       },
-      "duration_seconds": 0.001824,
+      "duration_seconds": 0.001673,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -188,7 +188,7 @@
         "status": "ready",
         "hypotheses": 3
       },
-      "duration_seconds": 0.001603,
+      "duration_seconds": 0.001715,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -206,7 +206,7 @@
         "status": "completed",
         "review": "PASS"
       },
-      "duration_seconds": 0.080862,
+      "duration_seconds": 0.08816,
       "tool_calls": 2,
       "citation_valid": null,
       "tokens": null,
@@ -224,7 +224,7 @@
         "status": "completed",
         "review": "PASS"
       },
-      "duration_seconds": 0.074883,
+      "duration_seconds": 0.083568,
       "tool_calls": 2,
       "citation_valid": null,
       "tokens": null,
@@ -242,7 +242,7 @@
         "status": "completed",
         "review": "PASS"
       },
-      "duration_seconds": 0.079942,
+      "duration_seconds": 0.085118,
       "tool_calls": 2,
       "citation_valid": null,
       "tokens": null,
@@ -260,7 +260,7 @@
         "status": "failed",
         "review": "REVISE_ONCE"
       },
-      "duration_seconds": 0.112844,
+      "duration_seconds": 0.112937,
       "tool_calls": 2,
       "citation_valid": null,
       "tokens": null,
@@ -278,7 +278,7 @@
         "status": "rejected",
         "review": "REJECT"
       },
-      "duration_seconds": 0.000875,
+      "duration_seconds": 0.00085,
       "tool_calls": 0,
       "citation_valid": null,
       "tokens": null,
@@ -295,7 +295,7 @@
       "actual": {
         "denied": true
       },
-      "duration_seconds": 0.001389,
+      "duration_seconds": 0.001498,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -312,7 +312,7 @@
       "actual": {
         "denied": true
       },
-      "duration_seconds": 0.000867,
+      "duration_seconds": 0.000947,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -329,7 +329,7 @@
       "actual": {
         "denied": true
       },
-      "duration_seconds": 0.000837,
+      "duration_seconds": 0.000874,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -346,7 +346,7 @@
       "actual": {
         "stopped": true
       },
-      "duration_seconds": 0.024517,
+      "duration_seconds": 0.02519,
       "tool_calls": 1,
       "citation_valid": null,
       "tokens": null,
@@ -363,7 +363,7 @@
       "actual": {
         "stopped": true
       },
-      "duration_seconds": 0.001174,
+      "duration_seconds": 0.001019,
       "tool_calls": 2,
       "citation_valid": null,
       "tokens": null,
