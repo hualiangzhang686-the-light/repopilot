@@ -9,6 +9,7 @@ from repopilot.agent.models import CodeResearchModel
 from repopilot.agent.stop_conditions import StopController
 from repopilot.harness.permissions import RepositoryBoundary
 from repopilot.harness.trace import TraceWriter
+from repopilot.fix.engine import FixEngine
 from repopilot.retrieval.evidence import CitationValidator, EvidenceLedger
 from repopilot.tools.base import ToolContext
 from repopilot.tools.code import register_code_tools
@@ -31,6 +32,10 @@ def build_parser() -> argparse.ArgumentParser:
     triage.add_argument("repo", type=Path)
     triage.add_argument("--issue", type=Path, required=True)
     triage.add_argument("--trace", type=Path, default=Path("traces/triage-latest.jsonl"))
+    fix = subparsers.add_parser("fix", help="Apply and verify one structured patch in a disposable sandbox.")
+    fix.add_argument("repo", type=Path)
+    fix.add_argument("--issue", type=Path, required=True)
+    fix.add_argument("--trace", type=Path, default=Path("traces/fix-latest.jsonl"))
     return parser
 
 
@@ -76,6 +81,13 @@ def run_triage(args: argparse.Namespace) -> int:
     return 0 if result.status == "ready" else 2
 
 
+def run_fix(args: argparse.Namespace) -> int:
+    issue_text = args.issue.read_text(encoding="utf-8")
+    result = FixEngine(args.repo).fix(issue_text, trace=TraceWriter(args.trace))
+    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+    return 0 if result.status == "completed" else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -83,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_research(args)
     if args.command == "triage":
         return run_triage(args)
+    if args.command == "fix":
+        return run_fix(args)
     parser.error(f"unsupported command: {args.command}")
     return 2
 

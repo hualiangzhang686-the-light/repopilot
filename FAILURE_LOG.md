@@ -39,3 +39,15 @@
 
 - This is a local capability gate and subprocess boundary, not an OS container or production sandbox.
 - Session JSON is local and unencrypted; it must not contain credentials.
+
+## Day 5: Patch Applied but Verification Fails
+
+- Scenario: a focused patch is applied in the sandbox, but its post-test still exits non-zero.
+- Expected: Reviewer returns `REVISE_ONCE`, result status is `failed`, and the original repository remains byte-for-byte unchanged.
+- Reproduction: `python -m repopilot fix examples/fix_repo --issue examples/fix_issues/04-test-fails.md --trace traces/day5-fix-failure.jsonl`.
+- Evidence: `traces/day5-fix-success.jsonl` and `traces/day5-fix-failure.jsonl`.
+
+### Remaining Day 5 boundary
+
+- Patch generation is a structured exact replacement, not an LLM-generated semantic patch.
+- The disposable directory is filesystem isolation, not a container or hostile-code sandbox.

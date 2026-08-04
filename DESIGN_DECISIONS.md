@@ -27,3 +27,9 @@ Triage has no write tool or mutation path. A vague issue returns `blocked`, emit
 `PermissionGate` classifies read, write, execute, delete, and external capabilities. Read is allowed inside the existing repository boundary; write requires an explicit target inside a sandbox; execute requires an argument-vector prefix allowlist; delete and external actions are disabled. Commands never use a shell.
 
 Session state stores the goal, evidence, plan, key state, and compacted history separately so compaction cannot accidentally discard the control contract. Large output is replaced inline by a bounded preview and an integrity-linked Artifact. Process timeout and consecutive failed observations are separate stop mechanisms.
+
+## Day 5: Patch Only in a Disposable Copy
+
+`FixEngine` parses one explicit patch contract from the issue, requires Triage evidence for the target path, copies the repository into a disposable sandbox, records a pre-test, applies one exact text replacement, records a post-test, creates a unified diff, and gives the evidence to a non-mutating Reviewer. Only a non-empty diff with a passing post-test is `completed`.
+
+The test command is not free-form shell: it must be `{python} -c ...` or `{python} -m unittest ...`, executes without a shell, and has a process timeout. A failed review emits `REVISE_ONCE` but the deterministic version stops at the one-revision limit rather than inventing a second patch.
