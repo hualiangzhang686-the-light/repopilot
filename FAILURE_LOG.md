@@ -51,3 +51,12 @@
 
 - Patch generation is a structured exact replacement, not an LLM-generated semantic patch.
 - The disposable directory is filesystem isolation, not a container or hostile-code sandbox.
+
+## Day 6: mini-swe-agent Baseline Blocked
+
+- Scenario: install and run mini-swe-agent 2.3.0 for three controlled tasks.
+- Actual: the temporary Python 3.14 installation exceeded 240 seconds, and no supported remote-model credential was present.
+- Result: baseline status is `blocked_no_model_credentials`; result list stays empty and no comparative metric is claimed.
+- Evidence: `eval/mini_swe_baseline.json`, `EVAL_REPORT.md`, and `traces/day6-eval.jsonl`.
+
+The RepoPilot fixed suite itself completed 20/20; this does not satisfy the separate mini-swe-agent comparison acceptance item.

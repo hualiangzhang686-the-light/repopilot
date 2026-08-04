@@ -33,3 +33,9 @@ Session state stores the goal, evidence, plan, key state, and compacted history 
 `FixEngine` parses one explicit patch contract from the issue, requires Triage evidence for the target path, copies the repository into a disposable sandbox, records a pre-test, applies one exact text replacement, records a post-test, creates a unified diff, and gives the evidence to a non-mutating Reviewer. Only a non-empty diff with a passing post-test is `completed`.
 
 The test command is not free-form shell: it must be `{python} -c ...` or `{python} -m unittest ...`, executes without a shell, and has a process timeout. A failed review emits `REVISE_ONCE` but the deterministic version stops at the one-revision limit rather than inventing a second patch.
+
+## Day 6: Fixed Tasks and Machine-Generated Metrics
+
+The 20-task suite is stored as data with an expected result for every task. One runner dispatches the five required categories and records actual output, pass/fail, latency, tool/process calls, citation validity, and failure layer. Token and cost remain `null` when no remote model ran; they are not reported as zero.
+
+The mini-swe-agent comparison has a pinned version, three shared tasks, repository, timeout, model-equality rule, cost limit, and test contract. Because no model credential was available and the isolated install timed out, the report marks it blocked and leaves results empty rather than fabricating a baseline.

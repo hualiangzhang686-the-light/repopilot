@@ -1,0 +1,18 @@
+{
+  "system": "mini-swe-agent",
+  "version": "2.3.0",
+  "source": "https://github.com/SWE-agent/mini-swe-agent",
+  "status": "blocked_no_model_credentials",
+  "cli_install_status": "timed_out_after_240_seconds_on_python_3.14",
+  "controls": {
+    "repository": "examples/fix_repo",
+    "timeout_seconds": 120,
+    "max_cost_usd": 1.0,
+    "model": "must be identical to RepoPilot remote-provider run",
+    "test_command": "task-specific command from the issue fixture"
+  },
+  "tasks": ["fix-01", "fix-02", "fix-03"],
+  "results": [],
+  "required_environment": ["OPENAI_API_KEY or another mini-swe-agent-supported provider credential"],
+  "note": "No credential was available on 2026-08-04, and the isolated CLI install attempt timed out after 240 seconds. No baseline success, cost, token, or latency metric is claimed."
+}

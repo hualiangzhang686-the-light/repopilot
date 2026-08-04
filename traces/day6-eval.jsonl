@@ -1,0 +1,4 @@
+{"data": {"tasks": "eval\\tasks.json"}, "event": "eval.start", "run_id": "d197baeed4404fd6976c2a796a412fb6", "step": 0, "timestamp": "2026-08-04T09:19:38.262717+00:00"}
+{"data": {"failed": 0, "passed": 20, "total": 20}, "event": "eval.result", "run_id": "d197baeed4404fd6976c2a796a412fb6", "step": 1, "timestamp": "2026-08-04T09:19:38.667803+00:00"}
+{"data": {"status": "blocked_no_model_credentials", "system": "mini-swe-agent"}, "event": "baseline.status", "run_id": "d197baeed4404fd6976c2a796a412fb6", "step": 2, "timestamp": "2026-08-04T09:19:38.668267+00:00"}
+{"data": {"reason": "complete"}, "event": "eval.stop", "run_id": "d197baeed4404fd6976c2a796a412fb6", "step": 3, "timestamp": "2026-08-04T09:19:38.668565+00:00"}

@@ -10,6 +10,7 @@ from repopilot.agent.stop_conditions import StopController
 from repopilot.harness.permissions import RepositoryBoundary
 from repopilot.harness.trace import TraceWriter
 from repopilot.fix.engine import FixEngine
+from repopilot.evaluation.runner import EvalRunner
 from repopilot.retrieval.evidence import CitationValidator, EvidenceLedger
 from repopilot.tools.base import ToolContext
 from repopilot.tools.code import register_code_tools
@@ -36,6 +37,13 @@ def build_parser() -> argparse.ArgumentParser:
     fix.add_argument("repo", type=Path)
     fix.add_argument("--issue", type=Path, required=True)
     fix.add_argument("--trace", type=Path, default=Path("traces/fix-latest.jsonl"))
+    evaluate = subparsers.add_parser("eval", help="Run the fixed 20-task local evaluation suite.")
+    evaluate.add_argument("--project-root", type=Path, default=Path("."))
+    evaluate.add_argument("--tasks", type=Path, default=Path("eval/tasks.json"))
+    evaluate.add_argument("--output", type=Path, default=Path("eval/results.json"))
+    evaluate.add_argument("--report", type=Path, default=Path("EVAL_REPORT.md"))
+    evaluate.add_argument("--baseline", type=Path, default=Path("eval/mini_swe_baseline.json"))
+    evaluate.add_argument("--trace", type=Path, default=Path("traces/day6-eval.jsonl"))
     return parser
 
 
@@ -88,6 +96,24 @@ def run_fix(args: argparse.Namespace) -> int:
     return 0 if result.status == "completed" else 2
 
 
+def run_eval(args: argparse.Namespace) -> int:
+    runner = EvalRunner(args.project_root)
+    trace = TraceWriter(args.trace)
+    trace.emit("eval.start", step=0, data={"tasks": str(args.tasks)})
+    summary = runner.run(args.tasks)
+    runner.write_outputs(summary, args.output, args.report, args.baseline)
+    trace.emit(
+        "eval.result",
+        step=1,
+        data={"total": summary.total, "passed": summary.passed, "failed": summary.failed},
+    )
+    baseline = json.loads(args.baseline.read_text(encoding="utf-8"))
+    trace.emit("baseline.status", step=2, data={"system": baseline["system"], "status": baseline["status"]})
+    trace.emit("eval.stop", step=3, data={"reason": "complete" if summary.failed == 0 else "task_failure"})
+    print(json.dumps({"total": summary.total, "passed": summary.passed, "failed": summary.failed}, indent=2))
+    return 0 if summary.failed == 0 else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -97,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_triage(args)
     if args.command == "fix":
         return run_fix(args)
+    if args.command == "eval":
+        return run_eval(args)
     parser.error(f"unsupported command: {args.command}")
     return 2
 
