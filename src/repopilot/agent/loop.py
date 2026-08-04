@@ -98,6 +98,9 @@ class AgentLoop:
                     "error": observation.error,
                 },
             )
+            failure_reason = self.stop_controller.register_observation(observation)
+            if failure_reason:
+                return self._stopped(failure_reason, steps, history)
 
     def _stopped(self, reason: str, steps: int, history: list[ToolExchange]) -> RunResult:
         self.trace.emit("loop.stop", step=steps, data={"reason": reason})

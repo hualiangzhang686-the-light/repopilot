@@ -27,3 +27,15 @@
 - TF-IDF is deterministic sparse retrieval, not semantic neural embeddings.
 - `CodeResearchModel` is a local workflow double, not a remote LLM provider.
 - Day 3 triage is candidate generation and planning, not runtime root-cause validation.
+
+## Day 4: Denied Capability and Process Timeout
+
+- Scenario: the harness requests delete or external access, or an allowlisted process exceeds its wall-clock limit.
+- Expected: delete/external actions are denied before execution; the process is terminated with `timed_out=true`.
+- Reproduction: `python examples/run_day4_harness_demo.py` and `python -m unittest tests.test_day4 -v`.
+- Evidence: `traces/day4-permission-denied.jsonl` and `traces/day4-session-success.jsonl`.
+
+### Remaining Day 4 boundary
+
+- This is a local capability gate and subprocess boundary, not an OS container or production sandbox.
+- Session JSON is local and unencrypted; it must not contain credentials.

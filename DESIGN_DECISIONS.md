@@ -21,3 +21,9 @@ Retrieval combines lexical overlap with a standard-library TF-IDF vector-space c
 `IssueTriageEngine` produces a Goal Contract, candidate evidence, explicitly unverified hypotheses, verification-bearing plan steps, risks, information gaps, and a stop condition. Retrieval rank creates candidates only; even the first result is never labeled a root cause.
 
 Triage has no write tool or mutation path. A vague issue returns `blocked`, emits a failure trace, and requests reproduction details instead of inventing an implementation plan.
+
+## Day 4: Capabilities Are Denied Centrally
+
+`PermissionGate` classifies read, write, execute, delete, and external capabilities. Read is allowed inside the existing repository boundary; write requires an explicit target inside a sandbox; execute requires an argument-vector prefix allowlist; delete and external actions are disabled. Commands never use a shell.
+
+Session state stores the goal, evidence, plan, key state, and compacted history separately so compaction cannot accidentally discard the control contract. Large output is replaced inline by a bounded preview and an integrity-linked Artifact. Process timeout and consecutive failed observations are separate stop mechanisms.

@@ -1,0 +1,2 @@
+{"data": {"allowed": false, "capability": "delete", "reason": "delete capability is disabled"}, "event": "permission.denied", "run_id": "b40a35b5d47b47d689ad17c1203fb4be", "step": 1, "timestamp": "2026-08-04T09:08:04.684180+00:00"}
+{"data": {"allowed": false, "capability": "external", "reason": "external capability is disabled"}, "event": "permission.denied", "run_id": "b40a35b5d47b47d689ad17c1203fb4be", "step": 2, "timestamp": "2026-08-04T09:08:04.684476+00:00"}
