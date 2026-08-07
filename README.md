@@ -59,6 +59,18 @@ repopilot research ./examples/demo_repo "Where is login implemented?" --provider
 
 The adapter and response parsing are unit-tested with an injected transport. No live API call was made for this release because no API key was present. See the official [Responses API guide](https://developers.openai.com/api/docs/guides/responses) and [current model guidance](https://developers.openai.com/api/docs/guides/latest-model).
 
+## DeepSeek provider
+
+The optional DeepSeek adapter uses the official Chat Completions endpoint and function tools. Its current default is `deepseek-v4-pro`; use `deepseek-v4-flash` explicitly when preferred.
+
+```powershell
+$env:DEEPSEEK_API_KEY="..."
+repopilot research ./examples/demo_repo "Where is login implemented?" --provider deepseek
+repopilot research ./examples/demo_repo "Where is login implemented?" --provider deepseek --model deepseek-v4-flash
+```
+
+The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, and `total_tokens`, and the final answer still has to pass RepoPilot's independent citation validator. The provider tests use an injected transport; a live API call requires a user-supplied key.
+
 ## Evaluation
 
 `eval/tasks.json` contains exactly 20 tasks with expected results:
@@ -76,8 +88,8 @@ The latest deterministic run passed 20/20. Token and cost metrics are `null`, no
 ## Docker
 
 ```powershell
-docker build -t repopilot:0.7.0 .
-docker run --rm repopilot:0.7.0 --help
+docker build -t repopilot:0.8.0 .
+docker run --rm repopilot:0.8.0 --help
 ```
 
 Mount a repository read-only for research. Do not pass API keys into untrusted images or commit them to the repository.
@@ -99,4 +111,4 @@ Mount a repository read-only for research. Do not pass API keys into untrusted i
 - `fix` uses exact structured replacements in disposable filesystem copies; it is not an LLM patch generator.
 - Test execution is restricted to Python `-c` or `-m unittest`, without a shell.
 - The local sandbox is not a container security boundary for hostile code.
-- OpenAI remote execution, mini-swe-agent comparative metrics, video recording, and GitHub Actions status are separate external validations.
+- OpenAI and DeepSeek remote execution, mini-swe-agent comparative metrics, video recording, and GitHub Actions status are separate external validations.

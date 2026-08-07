@@ -4,7 +4,7 @@
 
 ```text
 CLI → RepositoryBoundary → ToolRegistry → AgentLoop
-    → Model (local or OpenAI Responses adapter)
+    → Model (local, OpenAI Responses, or DeepSeek Chat adapter)
     → search_code → PythonAstChunker → HybridRetriever
     → read_file → Evidence Ledger → CitationValidator → answer
 ```

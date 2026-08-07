@@ -18,6 +18,7 @@ from repopilot.tools.code import register_code_tools
 from repopilot.tools.filesystem import register_read_tools
 from repopilot.tools.registry import ToolRegistry
 from repopilot.triage.engine import IssueTriageEngine
+from repopilot.providers.deepseek import DeepSeekChatModel
 from repopilot.providers.openai import OpenAIResponsesModel
 
 
@@ -31,8 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--max-steps", type=int, default=8)
     research.add_argument("--timeout", type=float, default=30.0)
     research.add_argument("--repeat-limit", type=int, default=2)
-    research.add_argument("--provider", choices=("local", "openai"), default="local")
-    research.add_argument("--model", default="gpt-5.6-sol")
+    research.add_argument("--provider", choices=("local", "openai", "deepseek"), default="local")
+    research.add_argument("--model", help="Provider model override; each provider uses its current default when omitted.")
     triage = subparsers.add_parser("triage", help="Produce a read-only, evidence-linked issue plan.")
     triage.add_argument("repo", type=Path)
     triage.add_argument("--issue", type=Path, required=True)
@@ -60,9 +61,16 @@ def run_research(args: argparse.Namespace) -> int:
     register_code_tools(registry)
     context = ToolContext(repository_root=boundary.root, boundary=boundary)
     try:
-        model = CodeResearchModel() if args.provider == "local" else OpenAIResponsesModel.from_environment(
-            registry.definitions(), model=args.model
-        )
+        if args.provider == "local":
+            model = CodeResearchModel()
+        elif args.provider == "openai":
+            model = OpenAIResponsesModel.from_environment(
+                registry.definitions(), model=args.model or "gpt-5.6-sol"
+            )
+        else:
+            model = DeepSeekChatModel.from_environment(
+                registry.definitions(), model=args.model or DeepSeekChatModel.DEFAULT_MODEL
+            )
     except ValueError as exc:
         print(
             json.dumps(

@@ -64,6 +64,7 @@ The RepoPilot fixed suite itself completed 20/20; this does not satisfy the sepa
 ## Day 7: External Validation Boundaries
 
 - OpenAI adapter: implemented and tested with an injected transport; no `OPENAI_API_KEY` was available, so no live request, billing, latency, or model-quality result is claimed.
+- DeepSeek adapter: implemented and tested with an injected transport; no `DEEPSEEK_API_KEY` was available, so no live request, billing, latency, or model-quality result is claimed.
 - Public repository: direct shallow clone of PyPA sampleproject failed because github.com port 443 was unavailable through the configured proxy. A source-pinned public file was retrieved through the GitHub connector and successfully researched; full-repository validation remains incomplete.
 - Docker: Docker Desktop 29.4.2 started, but the first base-image download ended with `unexpected EOF` and the bounded retry timed out after 304 seconds. The Dockerfile is present; image execution remains unverified.
 - GitHub Actions: the workflow definition is present; its actual result must be recorded after remote push.
