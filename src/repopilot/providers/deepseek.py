@@ -81,6 +81,13 @@ class DeepSeekChatModel:
         return cls(DeepSeekChatClient(key, transport=transport), tools, model=model)
 
     def decide(self, question: str, history: list[ToolExchange]) -> ModelDecision:
+        successful_tools = {item.call.name for item in history if item.observation.ok}
+        if "search_code" not in successful_tools:
+            tool_choice: object = {"type": "function", "function": {"name": "search_code"}}
+        elif "read_file" not in successful_tools:
+            tool_choice = {"type": "function", "function": {"name": "read_file"}}
+        else:
+            tool_choice = "none"
         payload = {
             "model": self.model,
             "messages": [
@@ -95,7 +102,7 @@ class DeepSeekChatModel:
                 {"role": "user", "content": self._prompt(question, history)},
             ],
             "tools": [self._tool(definition) for definition in self.tools],
-            "tool_choice": "auto",
+            "tool_choice": tool_choice,
             "thinking": {"type": "disabled"},
             "stream": False,
         }
@@ -104,8 +111,16 @@ class DeepSeekChatModel:
         message = self._message(response)
         tool_calls = message.get("tool_calls", [])
         if tool_calls:
-            if not isinstance(tool_calls, list) or len(tool_calls) != 1 or not isinstance(tool_calls[0], dict):
-                raise RuntimeError("DeepSeek must return exactly one tool call")
+            if not isinstance(tool_calls, list) or not all(isinstance(call, dict) for call in tool_calls):
+                raise RuntimeError("DeepSeek returned invalid tool calls")
+            expected_name = tool_choice["function"]["name"] if isinstance(tool_choice, dict) else None
+            names = [
+                function.get("name") if isinstance((function := call.get("function")), dict) else None
+                for call in tool_calls
+            ]
+            if any(name != expected_name for name in names):
+                raise RuntimeError("DeepSeek returned an unexpected parallel tool call")
+            # ponytail: execute the first forced read-only action; add batching only if AgentLoop gains parallel history.
             function = tool_calls[0].get("function")
             if not isinstance(function, dict):
                 raise RuntimeError("DeepSeek tool call has no function object")
@@ -182,18 +197,37 @@ class DeepSeekChatModel:
         if search is None or read is None:
             return {}
         matches = search.observation.data.get("matches", [])
-        if not isinstance(matches, list) or not matches or not isinstance(matches[0], dict):
+        read_data = read.observation.data
+        read_path = str(read_data.get("path", ""))
+        read_start = read_data.get("start_line")
+        read_end = read_data.get("end_line")
+        if not isinstance(matches, list) or not isinstance(read_start, int) or not isinstance(read_end, int):
             return {}
-        top = matches[0]
+        top = next(
+            (
+                match
+                for match in matches
+                if isinstance(match, dict)
+                and str(match.get("path")) == read_path
+                and read_start <= int(match.get("start_line", 0)) <= int(match.get("end_line", 0)) <= read_end
+            ),
+            None,
+        )
+        if top is None:
+            return {}
+        lines = str(read_data.get("content", "")).splitlines()
+        start_line = int(top["start_line"])
+        end_line = int(top["end_line"])
+        excerpt = "\n".join(lines[start_line - read_start : end_line - read_start + 1])
         evidence = {
             "id": "ev-1",
             "path": str(top["path"]),
             "symbol": str(top["symbol"]),
             "kind": str(top["kind"]),
-            "start_line": int(top["start_line"]),
-            "end_line": int(top["end_line"]),
+            "start_line": start_line,
+            "end_line": end_line,
             "reason": "Selected by the DeepSeek provider after hybrid retrieval.",
-            "excerpt": str(read.observation.data.get("content", "")),
+            "excerpt": excerpt,
         }
         claim = {
             "text": "DeepSeek answer grounded in ev-1.",

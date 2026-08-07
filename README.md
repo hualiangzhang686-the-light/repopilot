@@ -69,7 +69,7 @@ repopilot research ./examples/demo_repo "Where is login implemented?" --provider
 repopilot research ./examples/demo_repo "Where is login implemented?" --provider deepseek --model deepseek-v4-flash
 ```
 
-The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, and `total_tokens`, and the final answer still has to pass RepoPilot's independent citation validator. The provider tests use an injected transport; a live API call requires a user-supplied key.
+The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, and `total_tokens`, and the final answer still has to pass RepoPilot's independent citation validator. In addition to injected-transport tests, a live `deepseek-v4-flash` demo completed the `search_code` → `read_file` → validated answer flow on 2026-08-08 with a user-supplied key.
 
 ## Evaluation
 

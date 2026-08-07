@@ -19,6 +19,7 @@ from repopilot.tools.base import Observation, ToolDefinition, ToolExchange
 
 
 TOOL = ToolDefinition("search_code", "search", {"type": "object", "properties": {}, "required": []}, lambda c, a: {})
+READ_TOOL = ToolDefinition("read_file", "read", {"type": "object", "properties": {}, "required": []}, lambda c, a: {})
 
 
 class DeepSeekProviderTests(unittest.TestCase):
@@ -27,6 +28,9 @@ class DeepSeekProviderTests(unittest.TestCase):
             self.assertEqual(payload["model"], "deepseek-v4-pro")
             self.assertEqual(payload["thinking"], {"type": "disabled"})
             self.assertEqual(payload["tools"][0]["function"]["name"], "search_code")
+            self.assertEqual(
+                payload["tool_choice"], {"type": "function", "function": {"name": "search_code"}}
+            )
             return {
                 "choices": [
                     {
@@ -56,21 +60,63 @@ class DeepSeekProviderTests(unittest.TestCase):
             "choices": [{"message": {"role": "assistant", "content": "Grounded answer [ev-1]."}}],
             "usage": {"prompt_tokens": 12, "completion_tokens": 6, "total_tokens": 18},
         }
-        model = DeepSeekChatModel(DeepSeekChatClient("test-key", transport=lambda payload: response), (TOOL,))
+        payloads = []
+        model = DeepSeekChatModel(
+            DeepSeekChatClient("test-key", transport=lambda payload: payloads.append(payload) or response), (TOOL,)
+        )
         match = {"path": "app/auth.py", "symbol": "login", "kind": "function", "start_line": 10, "end_line": 14}
         history = [
             ToolExchange(ToolCall("search_code", {"query": "login"}), Observation.success({"matches": [match]})),
-            ToolExchange(ToolCall("read_file", {"path": "app/auth.py"}), Observation.success({"content": "def login():\n    pass"})),
+            ToolExchange(
+                ToolCall("read_file", {"path": "app/auth.py"}),
+                Observation.success(
+                    {
+                        "path": "app/auth.py",
+                        "start_line": 10,
+                        "end_line": 14,
+                        "content": "def login():\n    pass\n    pass\n    pass\n    pass",
+                    }
+                ),
+            ),
         ]
         decision = model.decide("login", history)
         self.assertIsInstance(decision, FinalAnswer)
         self.assertIn("evidence_ledger", decision.metadata)
+        self.assertEqual(payloads[0]["tool_choice"], "none")
+        self.assertEqual(
+            decision.metadata["evidence_ledger"]["evidence"][0]["excerpt"],
+            "def login():\n    pass\n    pass\n    pass\n    pass",
+        )
         self.assertEqual(
             decision.metadata["provider"]["usage"],
             {"input_tokens": 12, "output_tokens": 6, "total_tokens": 18},
         )
 
-    def test_provider_rejects_multiple_parallel_tool_calls(self) -> None:
+    def test_provider_forces_read_after_successful_search(self) -> None:
+        def transport(payload):
+            self.assertEqual(
+                payload["tool_choice"], {"type": "function", "function": {"name": "read_file"}}
+            )
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "tool_calls": [
+                                {"id": "read-1", "function": {"name": "read_file", "arguments": '{"path":"app/auth.py"}'}}
+                            ]
+                        }
+                    }
+                ]
+            }
+
+        history = [
+            ToolExchange(ToolCall("search_code", {"query": "login"}), Observation.success({"matches": []}))
+        ]
+        model = DeepSeekChatModel(DeepSeekChatClient("test-key", transport=transport), (TOOL, READ_TOOL))
+        decision = model.decide("login", history)
+        self.assertEqual(decision.name, "read_file")
+
+    def test_provider_collapses_multiple_calls_of_the_forced_tool(self) -> None:
         response = {
             "choices": [
                 {
@@ -84,7 +130,24 @@ class DeepSeekProviderTests(unittest.TestCase):
             ]
         }
         model = DeepSeekChatModel(DeepSeekChatClient("test-key", transport=lambda payload: response), (TOOL,))
-        with self.assertRaisesRegex(RuntimeError, "exactly one tool call"):
+        decision = model.decide("login", [])
+        self.assertEqual(decision.call_id, "one")
+
+    def test_provider_rejects_unexpected_parallel_tool(self) -> None:
+        response = {
+            "choices": [
+                {
+                    "message": {
+                        "tool_calls": [
+                            {"id": "one", "function": {"name": "search_code", "arguments": "{}"}},
+                            {"id": "two", "function": {"name": "read_file", "arguments": "{}"}},
+                        ]
+                    }
+                }
+            ]
+        }
+        model = DeepSeekChatModel(DeepSeekChatClient("test-key", transport=lambda payload: response), (TOOL,))
+        with self.assertRaisesRegex(RuntimeError, "unexpected parallel tool call"):
             model.decide("login", [])
 
     def test_provider_requires_environment_key(self) -> None:
