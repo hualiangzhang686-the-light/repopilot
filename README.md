@@ -83,7 +83,7 @@ The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, 
 | Permission/path safety | 3 | 3/3 |
 | Timeout/tool failure | 2 | 2/2 |
 
-The latest deterministic run passed 20/20. Token and cost metrics are `null`, not zero, because no remote provider ran. The mini-swe-agent 2.3.0 comparison contract covers three controlled tasks but remains unscored: no model credential was available and the isolated installation timed out. See [EVAL_REPORT.md](EVAL_REPORT.md).
+The latest deterministic run passed 20/20. Token and cost metrics are `null`, not zero, because this fixed evaluation used local deterministic models; the separate live DeepSeek demo is not part of these metrics. The mini-swe-agent 2.3.0 comparison contract covers three controlled tasks but remains unscored: no model credential was available and the isolated installation timed out. See [EVAL_REPORT.md](EVAL_REPORT.md).
 
 ## Docker
 
@@ -111,4 +111,4 @@ Mount a repository read-only for research. Do not pass API keys into untrusted i
 - `fix` uses exact structured replacements in disposable filesystem copies; it is not an LLM patch generator.
 - Test execution is restricted to Python `-c` or `-m unittest`, without a shell.
 - The local sandbox is not a container security boundary for hostile code.
-- OpenAI and DeepSeek remote execution, mini-swe-agent comparative metrics, video recording, and GitHub Actions status are separate external validations.
+- OpenAI live execution remains unverified. DeepSeek live execution is verified only for one `deepseek-v4-flash` research demo on `examples/demo_repo`; billing, latency benchmarks, broader model quality, mini-swe-agent comparative metrics, video recording, and current GitHub Actions status remain separate external validations.
