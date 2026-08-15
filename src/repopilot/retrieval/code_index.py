@@ -85,24 +85,33 @@ class PythonAstChunker:
     def __init__(self, root: Path) -> None:
         self.root = root.resolve(strict=True)
 
-    def build(self) -> list[CodeChunk]:
-        chunks: list[CodeChunk] = []
-        for path in sorted(self.root.rglob("*.py")):
-            if any(part in {".git", "__pycache__", ".venv", "venv"} for part in path.parts):
-                continue
-            text = path.read_text(encoding="utf-8", errors="replace")
-            lines = text.splitlines()
-            relative = path.relative_to(self.root).as_posix()
-            module = relative.removesuffix(".py").replace("/", ".")
-            chunks.append(CodeChunk(relative, module, "module", 1 if lines else 0, len(lines), text))
-            try:
-                tree = ast.parse(text)
-            except SyntaxError:
-                continue
-            collector = _DefinitionCollector(relative, lines)
-            collector.visit(tree)
-            chunks.extend(collector.chunks)
+    def python_files(self) -> list[Path]:
+        return [
+            path
+            for path in sorted(self.root.rglob("*.py"))
+            if not any(part in {".git", "__pycache__", ".venv", "venv"} for part in path.parts)
+        ]
+
+    def build_file(self, path: Path) -> list[CodeChunk]:
+        resolved = path.resolve(strict=True)
+        if not resolved.is_relative_to(self.root) or resolved.suffix != ".py":
+            raise ValueError(f"Python file is outside the index root: {path}")
+        text = resolved.read_text(encoding="utf-8", errors="replace")
+        lines = text.splitlines()
+        relative = resolved.relative_to(self.root).as_posix()
+        module = relative.removesuffix(".py").replace("/", ".")
+        chunks = [CodeChunk(relative, module, "module", 1 if lines else 0, len(lines), text)]
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            return chunks
+        collector = _DefinitionCollector(relative, lines)
+        collector.visit(tree)
+        chunks.extend(collector.chunks)
         return chunks
+
+    def build(self) -> list[CodeChunk]:
+        return [chunk for path in self.python_files() for chunk in self.build_file(path)]
 
 
 class HybridRetriever:

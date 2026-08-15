@@ -26,6 +26,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --no-deps --no-build-isolation .
 
 repopilot research ./examples/demo_repo "Where is the login function implemented?"
+repopilot context ./examples/demo_repo "login function" --token-budget 1200
 repopilot triage ./examples/demo_repo --issue ./examples/issues/01-auth-login.md
 repopilot fix ./examples/fix_repo --issue ./examples/fix_issues/01-add.md
 repopilot eval --project-root .
@@ -48,6 +49,12 @@ The most relevant implementation is `login` at `app/auth.py:10-14 (login)` [ev-1
 
 `CitationValidator` independently checks the current file, repository boundary, symbol, kind, line range, excerpt, Evidence IDs, and Claim links before CLI output is accepted.
 
+## Code context memory
+
+`search_code` retrieves versioned symbol cards containing the AST signature, first docstring line, exact source location, and statically resolved calls. Cards are cached outside the repository and only changed Python files are rebuilt. `repopilot context` expands the selected symbol by one call-graph hop and places cards plus current source under a caller-supplied budget; the complete target symbol is always re-read from disk or the command fails.
+
+This is a navigation layer, not editing authority: summaries come only from docstrings or signatures, call edges are static Python heuristics, and token usage is estimated as `ceil(chars/4)`. Neural embeddings, LSP resolution, and LLM-generated summaries remain out of scope.
+
 ## OpenAI provider
 
 The optional provider adapter uses the OpenAI Responses API with function tools. The current default is `gpt-5.6-sol`; override it explicitly when needed.
@@ -69,7 +76,7 @@ repopilot research ./examples/demo_repo "Where is login implemented?" --provider
 repopilot research ./examples/demo_repo "Where is login implemented?" --provider deepseek --model deepseek-v4-flash
 ```
 
-The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, and `total_tokens`, and the final answer still has to pass RepoPilot's independent citation validator. In addition to injected-transport tests, a live `deepseek-v4-flash` demo completed the `search_code` → `read_file` → validated answer flow on 2026-08-08 with a user-supplied key.
+The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, and `total_tokens`, and the final answer still has to pass RepoPilot's independent citation validator. In addition to injected-transport tests, bounded live `deepseek-v4-flash` demos completed the `search_code` → `read_file` → validated answer flow on 2026-08-08 and 2026-08-15 with a user-supplied key. The latter exercised the versioned symbol-card retrieval path.
 
 ## Evaluation
 
@@ -83,7 +90,7 @@ The adapter normalizes DeepSeek token usage to `input_tokens`, `output_tokens`, 
 | Permission/path safety | 3 | 3/3 |
 | Timeout/tool failure | 2 | 2/2 |
 
-The latest deterministic run passed 20/20. Token and cost metrics are `null`, not zero, because this fixed evaluation used local deterministic models; the separate live DeepSeek demo is not part of these metrics. The mini-swe-agent 2.3.0 comparison contract covers three controlled tasks but remains unscored: no model credential was available and the isolated installation timed out. See [EVAL_REPORT.md](EVAL_REPORT.md).
+The latest deterministic run passed 20/20. Token and cost metrics are `null`, not zero, because this fixed evaluation used local deterministic models; the separate live DeepSeek demos are not part of these metrics. The mini-swe-agent 2.3.0 comparison contract covers three controlled tasks but remains unscored: no model credential was available and the isolated installation timed out. See [EVAL_REPORT.md](EVAL_REPORT.md).
 
 ## Docker
 
@@ -111,4 +118,4 @@ Mount a repository read-only for research. Do not pass API keys into untrusted i
 - `fix` uses exact structured replacements in disposable filesystem copies; it is not an LLM patch generator.
 - Test execution is restricted to Python `-c` or `-m unittest`, without a shell.
 - The local sandbox is not a container security boundary for hostile code.
-- OpenAI live execution remains unverified. DeepSeek live execution is verified only for one `deepseek-v4-flash` research demo on `examples/demo_repo`; billing, latency benchmarks, broader model quality, mini-swe-agent comparative metrics, video recording, and current GitHub Actions status remain separate external validations.
+- OpenAI live execution remains unverified. DeepSeek live execution is verified only for two bounded `deepseek-v4-flash` research demos on `examples/demo_repo`; billing, latency benchmarks, broader model quality, mini-swe-agent comparative metrics, video recording, and current GitHub Actions status remain separate external validations.
