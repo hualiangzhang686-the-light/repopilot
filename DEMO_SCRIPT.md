@@ -7,6 +7,6 @@
 5. Run Fix on `04-test-fails.md`; show that a patch with a failed test is not reported as success.
 6. Replay `traces/day5-fix-success.jsonl`.
 7. Run the fixed Eval and show 20/20 plus the unscored mini-swe-agent boundary.
-8. Close with current limits: no live remote-provider test, no container-grade local sandbox, and no video artifact generated automatically.
+8. Close with current limits: OpenAI has no live test; DeepSeek has two bounded `deepseek-v4-flash` research demos on `examples/demo_repo`, including the versioned symbol-card path, not a quality or latency benchmark; the local sandbox is not container-grade, and no video artifact is generated automatically.
 
 This file is the verified demo script. A recorded video remains a separate manual deliverable.

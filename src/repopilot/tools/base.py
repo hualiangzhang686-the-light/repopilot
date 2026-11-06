@@ -28,6 +28,7 @@ class Observation:
 class ToolContext:
     repository_root: Path
     boundary: "RepositoryBoundary"
+    symbol_cache_root: Path | None = None
 
 
 ToolHandler = Callable[[ToolContext, dict[str, object]], dict[str, object]]

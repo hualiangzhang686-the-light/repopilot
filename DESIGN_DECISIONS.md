@@ -42,6 +42,6 @@ The mini-swe-agent comparison has a pinned version, three shared tasks, reposito
 
 ## Day 7: Provider Is an Adapter, Evidence Is Still a Harness Rule
 
-The OpenAI Responses API adapter translates RepoPilot Tool Definitions into function tools and translates response items back into `ToolCall` or `FinalAnswer`. The transport is injectable for deterministic tests. Remote answers still require a locally reconstructed Evidence Ledger and the same independent citation validation as the local model.
+Provider adapters translate RepoPilot Tool Definitions into provider-specific function tools and translate responses back into `ToolCall` or `FinalAnswer`. The transports are injectable for deterministic tests. OpenAI uses the Responses API; DeepSeek uses Chat Completions function calling with `deepseek-v4-pro` as its default. Remote answers still require a locally reconstructed Evidence Ledger and the same independent citation validation as the local model.
 
 Trace replay, Docker, CI, and delivery documents expose existing behavior rather than adding hidden autonomy. The default model follows the official 2026-08-04 resolver result (`gpt-5.6-sol`), but no live call is claimed without an API key.

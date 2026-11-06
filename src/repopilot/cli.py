@@ -13,11 +13,13 @@ from repopilot.harness.replay import TraceReplay
 from repopilot.fix.engine import FixEngine
 from repopilot.evaluation.runner import EvalRunner
 from repopilot.retrieval.evidence import CitationValidator, EvidenceLedger
+from repopilot.retrieval.context import ContextManager, default_symbol_cache_root
 from repopilot.tools.base import ToolContext
 from repopilot.tools.code import register_code_tools
 from repopilot.tools.filesystem import register_read_tools
 from repopilot.tools.registry import ToolRegistry
 from repopilot.triage.engine import IssueTriageEngine
+from repopilot.providers.deepseek import DeepSeekChatModel
 from repopilot.providers.openai import OpenAIResponsesModel
 
 
@@ -31,8 +33,13 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--max-steps", type=int, default=8)
     research.add_argument("--timeout", type=float, default=30.0)
     research.add_argument("--repeat-limit", type=int, default=2)
-    research.add_argument("--provider", choices=("local", "openai"), default="local")
-    research.add_argument("--model", default="gpt-5.6-sol")
+    research.add_argument("--provider", choices=("local", "openai", "deepseek"), default="local")
+    research.add_argument("--model", help="Provider model override; each provider uses its current default when omitted.")
+    context = subparsers.add_parser("context", help="Build a budgeted, source-backed symbol context bundle.")
+    context.add_argument("repo", type=Path)
+    context.add_argument("query")
+    context.add_argument("--token-budget", type=int, default=2000)
+    context.add_argument("--max-cards", type=int, default=8)
     triage = subparsers.add_parser("triage", help="Produce a read-only, evidence-linked issue plan.")
     triage.add_argument("repo", type=Path)
     triage.add_argument("--issue", type=Path, required=True)
@@ -58,11 +65,22 @@ def run_research(args: argparse.Namespace) -> int:
     registry = ToolRegistry()
     register_read_tools(registry)
     register_code_tools(registry)
-    context = ToolContext(repository_root=boundary.root, boundary=boundary)
+    context = ToolContext(
+        repository_root=boundary.root,
+        boundary=boundary,
+        symbol_cache_root=default_symbol_cache_root(),
+    )
     try:
-        model = CodeResearchModel() if args.provider == "local" else OpenAIResponsesModel.from_environment(
-            registry.definitions(), model=args.model
-        )
+        if args.provider == "local":
+            model = CodeResearchModel()
+        elif args.provider == "openai":
+            model = OpenAIResponsesModel.from_environment(
+                registry.definitions(), model=args.model or "gpt-5.6-sol"
+            )
+        else:
+            model = DeepSeekChatModel.from_environment(
+                registry.definitions(), model=args.model or DeepSeekChatModel.DEFAULT_MODEL
+            )
     except ValueError as exc:
         print(
             json.dumps(
@@ -99,6 +117,21 @@ def run_research(args: argparse.Namespace) -> int:
     print(f"status={result.status} stop_reason={result.stop_reason} steps={result.steps}")
     print(f"trace={result.trace_path}")
     return 0 if result.status == "completed" else 2
+
+
+def run_context(args: argparse.Namespace) -> int:
+    boundary = RepositoryBoundary(args.repo)
+    try:
+        bundle = ContextManager(boundary.root, default_symbol_cache_root()).assemble(
+            args.query,
+            token_budget=args.token_budget,
+            max_cards=args.max_cards,
+        )
+    except (RuntimeError, ValueError) as exc:
+        print(json.dumps({"status": "context_error", "error": str(exc)}, ensure_ascii=False, indent=2))
+        return 2
+    print(json.dumps(bundle.to_dict(), ensure_ascii=False, indent=2))
+    return 0 if bundle.target else 2
 
 
 def run_triage(args: argparse.Namespace) -> int:
@@ -145,6 +178,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "research":
         return run_research(args)
+    if args.command == "context":
+        return run_context(args)
     if args.command == "triage":
         return run_triage(args)
     if args.command == "fix":
