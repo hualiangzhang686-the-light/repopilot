@@ -1,0 +1,2 @@
+{"data": {"goal": "It is broken."}, "event": "triage.start", "run_id": "7f1f472ee19e44d68ee1bc61bf055851", "step": 0, "timestamp": "2026-08-03T13:44:56.302808+00:00"}
+{"data": {"gaps": ["The issue does not contain enough observable behavior or code context.", "Provide reproduction steps, expected result, actual result, and relevant environment details."], "status": "blocked"}, "event": "triage.stop", "run_id": "7f1f472ee19e44d68ee1bc61bf055851", "step": 0, "timestamp": "2026-08-03T13:44:56.303210+00:00"}

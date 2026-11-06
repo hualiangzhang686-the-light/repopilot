@@ -1,0 +1,2 @@
+{"data": {"evidence": [{"id": "ev-1"}], "goal": "preserve evidence across recovery"}, "event": "session.resumed", "run_id": "f97f702c5e1e46a9a745ddbadc6b1c21", "step": 1, "timestamp": "2026-08-04T09:08:04.682616+00:00"}
+{"data": {"summary": "omitted_events=6; recent=event-6 | event-7"}, "event": "context.compacted", "run_id": "f97f702c5e1e46a9a745ddbadc6b1c21", "step": 2, "timestamp": "2026-08-04T09:08:04.682952+00:00"}

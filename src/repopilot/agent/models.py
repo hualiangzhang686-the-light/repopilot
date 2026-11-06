@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Protocol, TypeAlias
+from uuid import uuid4
+
+from repopilot.tools.base import ToolExchange
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    name: str
+    arguments: dict[str, object]
+    call_id: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.call_id:
+            object.__setattr__(self, "call_id", uuid4().hex)
+
+
+@dataclass(frozen=True)
+class FinalAnswer:
+    content: str
+    metadata: dict[str, object] = field(default_factory=dict)
+
+
+ModelDecision: TypeAlias = ToolCall | FinalAnswer
+
+
+class AgentModel(Protocol):
+    def decide(self, question: str, history: list[ToolExchange]) -> ModelDecision:
+        """Return either the next tool request or the final answer."""
+
+
+class ScriptedModel:
+    """Deterministic model double for the Day 1 research workflow."""
+
+    def decide(self, question: str, history: list[ToolExchange]) -> ModelDecision:
+        if not history:
+            return ToolCall("list_files", {"path": "."})
+
+        last = history[-1]
+        if last.call.name == "list_files":
+            return ToolCall("search_text", {"path": ".", "query": self._search_term(question)})
+
+        if last.call.name == "search_text":
+            matches = last.observation.data.get("matches", []) if last.observation.ok else []
+            if not isinstance(matches, list) or not matches:
+                return FinalAnswer("没有找到与问题匹配的代码文本。")
+            first = matches[0]
+            if not isinstance(first, dict):
+                return FinalAnswer("检索结果格式无效，无法继续读取证据。")
+            line = int(first.get("line", 1))
+            return ToolCall(
+                "read_file",
+                {
+                    "path": str(first.get("path", "")),
+                    "start_line": max(1, line - 3),
+                    "end_line": line + 8,
+                },
+            )
+
+        if last.call.name == "read_file":
+            if not last.observation.ok:
+                return FinalAnswer(f"文件读取失败：{last.observation.error}")
+            data = last.observation.data
+            path = data.get("path", "未知文件")
+            start = data.get("start_line", "?")
+            end = data.get("end_line", "?")
+            return FinalAnswer(f"相关逻辑位于 {path}:{start}-{end}。该范围已由 read_file 工具实际读取。")
+
+        return FinalAnswer(f"工具 {last.call.name} 已执行，但 ScriptedModel 没有后续脚本。")
+
+    @staticmethod
+    def _search_term(question: str) -> str:
+        lowered = question.lower()
+        mappings = (
+            (("登录", "login", "signin", "sign in"), "login"),
+            (("认证", "鉴权", "auth"), "auth"),
+            (("超时", "timeout"), "timeout"),
+        )
+        for variants, term in mappings:
+            if any(variant in lowered for variant in variants):
+                return term
+        ascii_words = [word.strip(".,?!:;()[]{}\"'") for word in lowered.split()]
+        candidates = [word for word in ascii_words if len(word) >= 3 and word.isascii()]
+        return max(candidates, key=len) if candidates else question.strip()
+
+
+class CodeResearchModel:
+    """Deterministic Day 2 model that grounds one answer in retrieved code."""
+
+    def decide(self, question: str, history: list[ToolExchange]) -> ModelDecision:
+        if not history:
+            return ToolCall("search_code", {"query": question, "max_results": 5})
+
+        search = history[0]
+        matches = search.observation.data.get("matches", []) if search.observation.ok else []
+        if not isinstance(matches, list) or not matches:
+            return FinalAnswer("No grounded code evidence was found for this question.")
+
+        top = matches[0]
+        if not isinstance(top, dict):
+            return FinalAnswer("The retrieval result was malformed, so no claim was produced.")
+
+        if len(history) == 1:
+            return ToolCall(
+                "read_file",
+                {
+                    "path": str(top["path"]),
+                    "start_line": int(top["start_line"]),
+                    "end_line": int(top["end_line"]),
+                },
+            )
+
+        read = history[-1]
+        if read.call.name != "read_file" or not read.observation.ok:
+            return FinalAnswer("The selected citation could not be read, so no claim was produced.")
+
+        evidence = {
+            "id": "ev-1",
+            "path": str(top["path"]),
+            "symbol": str(top["symbol"]),
+            "kind": str(top["kind"]),
+            "start_line": int(top["start_line"]),
+            "end_line": int(top["end_line"]),
+            "reason": "Highest-scoring result from deterministic hybrid retrieval.",
+            "excerpt": str(read.observation.data.get("content", "")),
+        }
+        claim = {
+            "text": f"The most relevant implementation is {top['symbol']}.",
+            "evidence_ids": ["ev-1"],
+            "confidence": "retrieval-supported",
+        }
+        citation = f"{top['path']}:{top['start_line']}-{top['end_line']} ({top['symbol']})"
+        return FinalAnswer(
+            f"The most relevant implementation is `{top['symbol']}` at `{citation}` [ev-1].",
+            metadata={"evidence_ledger": {"question": question, "evidence": [evidence], "claims": [claim]}},
+        )

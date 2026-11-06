@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+traces/latest.jsonl
+traces/installed-cli.jsonl
+sessions/
+artifacts/
+eval/results-ci.json
+EVAL_REPORT-CI.md

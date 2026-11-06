@@ -1,0 +1,7 @@
+[
+  {"question": "Where is the login function implemented?", "path": "app/auth.py", "symbol": "login"},
+  {"question": "Which User class represents an authenticated user?", "path": "app/auth.py", "symbol": "User"},
+  {"question": "Which authenticate function wraps login and returns a boolean?", "path": "app/main.py", "symbol": "authenticate"},
+  {"question": "Where does is_session_expired check session expiration?", "path": "app/session.py", "symbol": "is_session_expired"},
+  {"question": "Which create_session function builds a session record?", "path": "app/session.py", "symbol": "create_session"}
+]
